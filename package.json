@@ -1,0 +1,40 @@
+{
+  "name": "dev",
+  "version": "1.0.0",
+  "description": "",
+  "main": "api_server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "NODE_ENV=development node server.js",
+    "dbinit": "./node_modules/.bin/sequelize db:migrate --config=db.js --migrations-path=db/migrations --seeders-path=db/seeders"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RypeSolution/rype-node.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/RypeSolution/Dev/issues"
+  },
+  "homepage": "https://github.com/RypeSolution/Dev#readme",
+  "dependencies": {
+    "bcrypt": "^1.0.3",
+    "bluebird": "latest",
+    "body-parser": "^1.17.2",
+    "cookie-parser": "^1.4.3",
+    "ejs": "^2.5.7",
+    "express": "latest",
+    "gulp": "^3.9.1",
+    "jwt-simple": "^0.5.1",
+    "lodash": "latest",
+    "moment": "^2.18.1",
+    "morgan": "^1.8.2",
+    "neo-async": "^2.5.0",
+    "sequelize": "^3.30.2",
+    "tapable": "^1.0.0",
+    "websocket": "^1.0.24",
+    "sequelize-cli": "^2.6.0",
+    "sqlite3": "^3.1.13"
+  }
+}
