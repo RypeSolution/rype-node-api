@@ -88,6 +88,10 @@ function authenticate(req, res) {
     }
 }
 
+app.get('/', (req, res) => {
+   return res.send('Rype API is up!')
+})
+
 app.post('/api/sessions', function (req, res, next) {
     let email = req.body.email;
     let password = req.body.password;
