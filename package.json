@@ -5,8 +5,9 @@
   "main": "api_server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "NODE_ENV=development npm run dbinit-seed && NODE_ENV=development node server.js",
-    "dbinit-seed": "./node_modules/.bin/gulp db:init:migrations:generate && ./node_modules/.bin/gulp db:init:seed"
+    "start": "NODE_ENV=development node server.js",
+    "dbinit-seed": "./node_modules/.bin/gulp db:init:migrations:generate && ./node_modules/.bin/gulp db:init:seed",
+    "postinstall": "./node_modules/.bin/gulp default"
   },
   "repository": {
     "type": "git",

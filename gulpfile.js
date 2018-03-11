@@ -24,6 +24,10 @@ gulp.task('db:clean:dev', () => {
     fs.unlinkSync(dbPath)
 })
 
+gulp.task('default', ['db:init:migrations:generate',], () => {
+    libDb.init(true)
+})
+
 function deleteFiles(dirPath, fn = null) {
     if(!fs.existsSync(dirPath)) return
     for (let fName of fs.readdirSync(dirPath)) {
