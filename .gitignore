@@ -20,6 +20,9 @@ lib-cov
 
 db/db.development.sqlite
 
+db/migrations/*
+!db/migrations/.keep
+
 # Coverage directory used by tools like istanbul
 coverage
 

@@ -39,8 +39,13 @@ let modelFilePath
 modelFilePath = path.join(__dirname, 'user.js')
 if(modelFiles.includes(modelFilePath)) db['User'] = importer(modelFilePath)
 
+modelFilePath = path.join(__dirname, 'rentalitem.js')
+if(modelFiles.includes(modelFilePath)) db['RentalItem'] = importer(modelFilePath)
 
-Object.keys(db).forEach((modelName) => { if (db[modelName].associate) db[modelName].associate(db) })
+
+Object.keys(db).forEach((modelName) => {
+    if (db[modelName].associate) db[modelName].associate(db)
+})
 
 db.sequelize = sequelize
 module.exports = db

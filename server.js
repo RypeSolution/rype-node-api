@@ -35,7 +35,14 @@ wsHandler.on('subscription_added', subject => {
     console.log('sending snapshot')
     models.User.all().then((users) => {
         let updates = users.map(u => {
-            return {changeType: 'NEW', value: u.get({plain: true})}
+            return {changeType: 'NEW', type: models.User.name, value: u.get({plain: true})}
+        })
+        wsHandler.emit('db_update', updates)
+    })
+    
+    models.RentalItem.all().then((items) => {
+        let updates = items.map(u => {
+            return {changeType: 'NEW', type: models.RentalItem.name, value: u.get({plain: true})}
         })
         wsHandler.emit('db_update', updates)
     })
