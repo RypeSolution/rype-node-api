@@ -218,8 +218,10 @@ wsServer.on('request', function (request) {
     
     connection.on('message', function (msg) {
         let parsedMsg = JSON.parse(msg.utf8Data)
-        let resp = require('./message').wsHandler.onMessage(this, {msg: parsedMsg, type: msg.type, raw: msg})
-        this.send(parsedMsg.topic, resp)
+        wsHandler.onMessage(this, {msg: parsedMsg, type: msg.type, raw: msg})
+            .then((resp) => {
+                this.send(parsedMsg.topic, resp)
+            })
     })
     
     connection.on('close', function (reasonCode, description) {

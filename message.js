@@ -4,6 +4,7 @@
 const _ = require('lodash')
 const url = require('url')
 const EventEmitter = require('events').EventEmitter
+const Promise = require('bluebird')
 
 class WebSocketHandler extends EventEmitter {
     
@@ -24,13 +25,18 @@ class WebSocketHandler extends EventEmitter {
     
         let resp = handler(connection, _.extend({$msg: msg}, parsed.query))
         
-        if(_.isString(resp)){
-            resp = {type:'utf8', data:resp}
-        }else if(!('type' in resp)){
-            resp['type'] = 'utf8'
-        }
         
-        return resp
+        
+        return (Promise.is(resp) ? resp : Promise.resolve(resp))
+            .then((value) => {
+                
+                if(_.isString(value)){
+                    value = {type:'utf8', data:value}
+                }else if(!('type' in value)){
+                    value['type'] = 'utf8'
+                }
+                return value
+            })
     }
     
     topic(label, callback) {
@@ -71,8 +77,40 @@ wsHandler.topic('/status', (conn, msg) => {
     return {data: 'hello world'}
 })
 
-wsHandler.topic('/subscribe', (conn, msg) => {
+wsHandler.topic('/search', (conn, msg) => {
     console.log('MSG', msg)
+    const models = require('./models')
+    let query = msg.q
+    let queryLower = query.toLowerCase()
+    
+    const filter = (modelJson) => {
+        for(let val of Object.values(modelJson)){
+            if(_.isString(val) && val.toLowerCase().indexOf(queryLower) !== -1){
+                return true
+            }
+        }
+        return false
+    }
+    
+    const toJsonList = (modelName, models) => {
+        return models.map((m) => {
+            let j = m.get({plain:true})
+            j.$type = modelName
+            return j
+        })
+    }
+    
+    return Promise.all([models.RentalItem.all(), models.User.all()])
+        .then(([items, users]) => {
+            let filteredItems = _.filter(toJsonList(models.RentalItem.name, items), filter)
+            let filteredUsers = _.filter(toJsonList(models.User.name, users), filter)
+            
+            return {data: _.concat(filteredItems, filteredUsers)}
+        })
+})
+
+wsHandler.topic('/subscribe', (conn, msg) => {
+    
     wsHandler.addSubscription(msg.subject, conn)
     
     return {data: {subscribed: msg.subject || null}}
