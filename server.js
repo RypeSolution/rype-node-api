@@ -66,7 +66,7 @@ function createUser(req, res) {
             })
             res.json(userJson)
             
-            wsHandler.emit('db_update', [{changeType: 'NEW', value: userJson}])
+            wsHandler.emit('db_update', [{changeType: 'NEW', type: models.User.name, value: userJson}])
         })
         .catch(error => {
             res.json({error})
