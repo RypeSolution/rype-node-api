@@ -105,7 +105,7 @@ wsHandler.topic('/search', (conn, msg) => {
             let filteredItems = _.filter(toJsonList(models.RentalItem.name, items), filter)
             let filteredUsers = _.filter(toJsonList(models.User.name, users), filter)
             
-            return {data: _.concat(filteredItems, filteredUsers)}
+            return {data: {results: _.concat(filteredItems, filteredUsers)}}
         })
 })
 

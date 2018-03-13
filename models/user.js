@@ -7,7 +7,6 @@ class User extends DbObject {
     }
     
     authenticate(password) {
-        //TODO {anthony}: make async
         return require('bcrypt').compareSync(password, this.password_hash)
     }
     
