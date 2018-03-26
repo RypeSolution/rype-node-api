@@ -1,4 +1,4 @@
-const DbObject = require('../lib/db').DbObject
+const DbObject = require('bkendz').DbObject
 
 class User extends DbObject {
     

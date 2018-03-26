@@ -1,33 +1,33 @@
 /**
- * Created by anthony on 02/09/2017.
+ * Created by anthony on 26/03/2018.
  */
-const http = require('http')
-const WebSocketServer = require('websocket').server;
-const _ = require('lodash');
+const _ = require('lodash')
+const bz = require('bkendz')
+const path = require('path')
 
-// Serve up public/ftp folder
-const express = require('express');
-const path = require('path');
-const logger = require('morgan');
-const cookieParser = require('cookie-parser');
-const bodyParser = require('body-parser');
-const jwt = require('jwt-simple')
+const app = new bz.Bkendz({
+    administerEnabled: false,
+    clientEnabled: false,
+    apiEnabled: true,
+    optsAdmin: {staticPath: path.join(__dirname, './src')}
+})
 
-const models = require('./models/index')
-const app = express()
-const wsHandler = require('./message').wsHandler
+app.api.on('request', (messageHandler, request, conn) => {
+    messageHandler.respond(conn, request)
+})
 
-app.set('view engine', 'ejs')
-app.use(logger('":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"'));
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({extended: false}));
-app.use(cookieParser());
+const wsHandler = app.api.messageHandlers.ws
+const router = app.api.messageHandlers.http
+const models = app.api.models
 
-app.use(function (req, res, next) {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers", "Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
-    res.header("Access-Control-Request-Method", "GET,POST,PUT,DELETE,OPTIONS");
-    
+wsHandler.topic('/status', () => {
+    return {data: {clients: app.api.connections.length}}
+})
+
+app.apiHttp.app.use(function (req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*")
+    res.header("Access-Control-Allow-Headers", "Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With")
+    res.header("Access-Control-Request-Method", "GET,POST,PUT,DELETE,OPTIONS")
     next()
 })
 
@@ -47,6 +47,56 @@ wsHandler.on('subscription_added', subject => {
         wsHandler.emit('db_update', updates)
     })
 })
+
+wsHandler.on('db_update', (updates) => {
+    for(let subscriberConn of wsHandler.subscribers['db_update'] || []){
+        subscriberConn.send('/subscribe?subject=db_update', {type: 'utf8', data:{updates}})
+    }
+})
+
+wsHandler.topic('/status', (conn, msg) => {
+    return {data: 'hello world'}
+})
+
+wsHandler.topic('/search', (conn, msg) => {
+    console.log('MSG', msg)
+    const models = require('./models')
+    let query = msg.q
+    let queryLower = query.toLowerCase()
+    
+    const filter = (modelJson) => {
+        for(let val of Object.values(modelJson)){
+            if(_.isString(val) && val.toLowerCase().indexOf(queryLower) !== -1){
+                return true
+            }
+        }
+        return false
+    }
+    
+    const toJsonList = (modelName, models) => {
+        return models.map((m) => {
+            let j = m.get({plain:true})
+            j.$type = modelName
+            return j
+        })
+    }
+    
+    return Promise.all([models.RentalItem.all(), models.User.all()])
+        .then(([items, users]) => {
+            let filteredItems = _.filter(toJsonList(models.RentalItem.name, items), filter)
+            let filteredUsers = _.filter(toJsonList(models.User.name, users), filter)
+            
+            return {data: {results: _.concat(filteredItems, filteredUsers)}}
+        })
+})
+
+wsHandler.topic('/subscribe', (conn, msg) => {
+    
+    wsHandler.addSubscription(msg.subject, conn)
+    
+    return {data: {subscribed: msg.subject || null}}
+})
+
 
 function createUser(req, res) {
     console.log('request body:', req.body)
@@ -95,11 +145,7 @@ function authenticate(req, res) {
     }
 }
 
-app.get('/', (req, res) => {
-   return res.send('Rype API is up!')
-})
-
-app.post('/api/sessions', function (req, res, next) {
+router.post('/api/sessions', function (req, res, next) {
     let email = req.body.email;
     let password = req.body.password;
     
@@ -121,112 +167,18 @@ app.post('/api/sessions', function (req, res, next) {
     }
 })
 
-app.post('/authenticate', authenticate)
-app.post('/api/users', createUser)
-app.post('/signup', createUser)
+router.post('/authenticate', authenticate)
+router.post('/api/users', createUser)
+router.post('/signup', createUser)
 
-app.options('/signup', function (req, res) {
+router.options('/signup', function (req, res) {
     res.json({hello: 'world'})
 })
 
-app.options('/authenticate', function (req, res) {
+router.options('/authenticate', function (req, res) {
     res.json({hello: 'world'})
 })
 
-app.use(express.static(path.join(__dirname, '../')))
-
-// catch 404 and forward to error handler
-app.use(function (req, res, next) {
-    const err = new Error('Not Found');
-    err.status = 404;
-    next(err);
-});
-
-// error handler
-app.use(function (err, req, res, next) {
-    // set locals, only providing error in development
-    res.locals.message = err.message;
-    res.locals.error = req.app.get('env') === 'development' ? err : {};
-    
-    // render the error page
-    res.status(err.status || 500);
-    //res.render('error');
-    console.error(err)
-});
-
-module.exports = app;
-
-const server = http.createServer(app)
-// Listen
-
-models.sequelize.sync()
-    .then(() => {
-        let port = process.env.PORT || 9000;
-        console.log(`db synced, starting API server on ${port}...`)
-        server.listen(port)
-    })
-
-wsServer = new WebSocketServer({httpServer: server, autoAcceptConnections: false});
-
-function originIsAllowed(origin) {
-    // put logic here to detect whether the specified origin is allowed.
-    return true;
-}
-
-wsServer.on('request', function (request) {
-    if (!originIsAllowed(request.origin)) {
-        // Make sure we only accept requests from an allowed origin
-        request.reject();
-        console.log((new Date()) + ' Connection from origin ' + request.origin + ' rejected.');
-        return;
-    }
-    console.dir('websocket:', request.resourceURL)
-    
-    const connection = request.accept('echo-protocol', request.origin);
-    
-    connection._resourceURL = request.resourceURL
-    console.log((new Date()) + ' Connection accepted.')
-    
-    connection.send = function (topic, resp) {
-        switch (resp.type) {
-            case 'utf8':
-                let dataStr = resp
-                
-                if (_.isObject(dataStr) && topic && !('topic' in dataStr)) {
-                    dataStr.topic = topic
-                }
-                
-                if (!_.isString(dataStr)) {
-                    dataStr = JSON.stringify(dataStr);
-                }
-                
-                this.sendUTF(dataStr, (error) => {
-                    if (error) {
-                        console.error(error)
-                    } else {
-                        console.log('message sent:', dataStr.slice(0, 100))
-                    }
-                })
-                break;
-            case 'binary':
-                this.sendBytes(resp.binaryData);
-                break;
-            default:
-                throw Error(`unknown response data type ${resp.dataType}`)
-        }
-    }
-    
-    connection.on('message', function (msg) {
-        let parsedMsg = JSON.parse(msg.utf8Data)
-        wsHandler.onMessage(this, {msg: parsedMsg, type: msg.type, raw: msg})
-            .then((resp) => {
-                this.send(parsedMsg.topic, resp)
-            })
-    })
-    
-    connection.on('close', function (reasonCode, description) {
-        require('./message').wsHandler.onClose(this, reasonCode, description)
-    })
-});
-
-module.exports = app
+const port = process.env.PORT || 9000
+console.log(`starting API server on ${port}...`)
+app.listen(port)
