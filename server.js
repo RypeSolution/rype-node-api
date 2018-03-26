@@ -5,11 +5,19 @@ const _ = require('lodash')
 const bz = require('bkendz')
 const path = require('path')
 
+function allowCrossdomain(req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*")
+    res.header("Access-Control-Allow-Headers", "Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With")
+    res.header("Access-Control-Request-Method", "GET,POST,PUT,DELETE,OPTIONS")
+    next()
+}
+
 const app = new bz.Bkendz({
     administerEnabled: false,
     clientEnabled: false,
     apiEnabled: true,
-    optsAdmin: {staticPath: path.join(__dirname, './src')}
+    optsAdmin: {staticPath: path.join(__dirname, './src')},
+    optsApi: {middleware: [allowCrossdomain]}
 })
 
 app.api.on('request', (messageHandler, request, conn) => {
@@ -22,13 +30,6 @@ const models = app.api.models
 
 wsHandler.topic('/status', () => {
     return {data: {clients: app.api.connections.length}}
-})
-
-app.apiHttp.app.use(function (req, res, next) {
-    res.header("Access-Control-Allow-Origin", "*")
-    res.header("Access-Control-Allow-Headers", "Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With")
-    res.header("Access-Control-Request-Method", "GET,POST,PUT,DELETE,OPTIONS")
-    next()
 })
 
 wsHandler.on('subscription_added', subject => {
