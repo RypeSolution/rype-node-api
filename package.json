@@ -8,7 +8,7 @@
     "start": "NODE_ENV=development node server.js",
     "sync-models-clean": "NODE_ENV=development gulp sync:models:clean",
     "sync-models-seed": "NODE_ENV=development gulp sync:models:seed",
-    "prestart": "NODE_ENV=development ./node_modules/.bin/gulp sync:models:seed"
+    "postinstall": "NODE_ENV=development ./node_modules/.bin/gulp sync:models:seed"
   },
   "repository": {
     "type": "git",
@@ -22,7 +22,7 @@
   "homepage": "https://github.com/RypeSolution/Dev#readme",
   "dependencies": {
     "bcrypt": "^1.0.3",
-    "bkendz": "1.2.4",
+    "bkendz": "1.2.5",
     "bluebird": "latest",
     "body-parser": "^1.17.2",
     "cookie-parser": "^1.4.3",
